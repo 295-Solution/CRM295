@@ -7,13 +7,23 @@ use App\Models\Quotation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreQuotationRequest;
 use App\Http\Requests\UpdateQuotationRequest;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class QuotationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $quotations = Quotation::with('lead')
+        $this->authorize('viewAny', Quotation::class);
+
+        $query = Quotation::with('lead');
+
+        if (! $request->user()->isAdmin()) {
+            $query->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $request->user()->id));
+        }
+
+        $quotations = $query
             ->latest()
             ->get();
 
@@ -22,7 +32,10 @@ class QuotationController extends Controller
 
     public function store(StoreQuotationRequest $request)
     {
+        $this->authorize('create', Quotation::class);
+
         $lead = Lead::findOrFail($request->validated()['lead_id']);
+        $this->authorize('view', $lead);
 
         if ($lead->status !== 'Hot') {
             return response()->json([
@@ -42,6 +55,8 @@ class QuotationController extends Controller
 
     public function show(Quotation $quotation)
     {
+        $this->authorize('view', $quotation);
+
         return response()->json(
             $quotation->load('lead')
         );
@@ -49,6 +64,8 @@ class QuotationController extends Controller
 
     public function update(UpdateQuotationRequest $request, Quotation $quotation)
     {
+        $this->authorize('update', $quotation);
+
         $quotation->update($request->validated());
 
         $this->applyAcceptedStatusTransition($request->user()?->id, $quotation);
@@ -61,6 +78,8 @@ class QuotationController extends Controller
 
     public function destroy(Quotation $quotation)
     {
+        $this->authorize('delete', $quotation);
+
         $quotation->delete();
 
         return response()->json([

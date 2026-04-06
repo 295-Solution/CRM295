@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,11 +18,16 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
-       User::updateOrCreate(
+        $seedPassword = app()->environment(['local', 'testing'])
+            ? 'password123'
+            : Str::password(24);
+
+        User::updateOrCreate(
             ['email' => 'admin@crm.test'],
             [
                 'name' => 'Admin CRM',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make($seedPassword),
+                'role' => 'admin',
             ]
         );
 
@@ -29,7 +35,8 @@ class DatabaseSeeder extends Seeder
             ['email' => 'sales1@crm.test'],
             [
                 'name' => 'Sales 1',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make($seedPassword),
+                'role' => 'sales',
             ]
         );
 
@@ -37,7 +44,8 @@ class DatabaseSeeder extends Seeder
             ['email' => 'sales2@crm.test'],
             [
                 'name' => 'Sales 2',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make($seedPassword),
+                'role' => 'sales',
             ]
         );
     }

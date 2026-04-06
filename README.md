@@ -177,6 +177,33 @@ php artisan test
 
 Saat ini mencakup test API workflow inti dan test web report/export.
 Termasuk juga test autentikasi web (login, logout, proteksi guest).
+Termasuk test security rate-limit untuk login dan API write endpoint (assert HTTP 429).
+
+## Security Hardening (Production)
+
+Sebelum deploy production, pastikan nilai environment ini sudah aman:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.tld
+
+SESSION_ENCRYPT=true
+SESSION_SECURE_COOKIE=true
+SESSION_SAME_SITE=lax
+
+SANCTUM_EXPIRATION=120
+```
+
+Catatan:
+
+- Web app sekarang mengirim security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy).
+- Header HSTS dikirim otomatis saat request menggunakan HTTPS.
+- Kontrol akses data sudah menerapkan policy ownership: user sales hanya dapat mengakses data lead/activity/quotation miliknya, admin dapat melihat semua.
+- Rate limiting aktif:
+  - Login POST: 20 request/menit per IP (`throttle:login`) + validasi login internal (5 percobaan gagal per email+IP).
+  - API read endpoint: admin 240/menit, sales 120/menit (`throttle:api-read`).
+  - API write endpoint: admin 120/menit, sales 60/menit (`throttle:api-write`).
 
 ## Struktur Modul Inti
 

@@ -52,7 +52,6 @@ class CrmWorkflowTest extends TestCase
     public function test_update_lead_status_creates_status_history_entry(): void
     {
         $actor = User::factory()->create();
-        $assignee = User::factory()->create();
 
         $lead = Lead::create([
             'nama_client' => 'Beta',
@@ -62,7 +61,7 @@ class CrmWorkflowTest extends TestCase
             'alamat' => 'Bandung',
             'sumber_lead' => 'ig',
             'status' => 'Cold',
-            'assigned_to' => $assignee->id,
+            'assigned_to' => $actor->id,
             'notes' => 'Initial',
         ]);
 
@@ -76,7 +75,7 @@ class CrmWorkflowTest extends TestCase
             'alamat' => 'Bandung',
             'sumber_lead' => 'ig',
             'status' => 'Hot',
-            'assigned_to' => $assignee->id,
+            'assigned_to' => $actor->id,
             'notes' => 'Escalated',
         ]);
 
@@ -86,6 +85,40 @@ class CrmWorkflowTest extends TestCase
         $this->assertSame('Cold', $history->from_status);
         $this->assertSame('Hot', $history->to_status);
         $this->assertSame($actor->id, $history->changed_by);
+    }
+
+    public function test_non_owner_cannot_access_other_user_lead(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $lead = Lead::create([
+            'nama_client' => 'Private Lead',
+            'perusahaan' => 'PT Private',
+            'no_hp' => '0891111222',
+            'email' => 'private@example.test',
+            'alamat' => 'Jakarta',
+            'sumber_lead' => 'website',
+            'status' => 'Warm',
+            'assigned_to' => $owner->id,
+            'notes' => null,
+        ]);
+
+        Sanctum::actingAs($otherUser);
+
+        $this->getJson("/api/leads/{$lead->id}")->assertForbidden();
+        $this->putJson("/api/leads/{$lead->id}", [
+            'nama_client' => 'Private Lead Updated',
+            'perusahaan' => 'PT Private',
+            'no_hp' => '0891111222',
+            'email' => 'private@example.test',
+            'alamat' => 'Jakarta',
+            'sumber_lead' => 'website',
+            'status' => 'Hot',
+            'assigned_to' => $owner->id,
+            'notes' => null,
+        ])->assertForbidden();
+        $this->deleteJson("/api/leads/{$lead->id}")->assertForbidden();
     }
 
     public function test_store_quotation_rejects_non_hot_lead(): void

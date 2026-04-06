@@ -6,12 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
+use Illuminate\Http\Request;
 
 class LeadController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $leads = Lead::with('assignedUser')
+        $this->authorize('viewAny', Lead::class);
+
+        $query = Lead::with('assignedUser');
+
+        if (! $request->user()->isAdmin()) {
+            $query->where('assigned_to', $request->user()->id);
+        }
+
+        $leads = $query
             ->latest()
             ->get();
 
@@ -20,7 +29,15 @@ class LeadController extends Controller
 
     public function store(StoreLeadRequest $request)
     {
-        $lead = Lead::create($request->validated());
+        $this->authorize('create', Lead::class);
+
+        $validated = $request->validated();
+
+        if (! $request->user()->isAdmin()) {
+            $validated['assigned_to'] = $request->user()->id;
+        }
+
+        $lead = Lead::create($validated);
 
         $lead->statusHistories()->create([
             'from_status' => null,
@@ -38,6 +55,8 @@ class LeadController extends Controller
 
     public function show(Lead $lead)
     {
+        $this->authorize('view', $lead);
+
         $lead->load([
             'assignedUser',
             'activities',
@@ -50,9 +69,17 @@ class LeadController extends Controller
 
     public function update(UpdateLeadRequest $request, Lead $lead)
     {
+        $this->authorize('update', $lead);
+
         $oldStatus = $lead->status;
 
-        $lead->update($request->validated());
+        $validated = $request->validated();
+
+        if (! $request->user()->isAdmin()) {
+            $validated['assigned_to'] = $lead->assigned_to;
+        }
+
+        $lead->update($validated);
 
         if ($oldStatus !== $lead->status) {
             $lead->statusHistories()->create([
@@ -72,6 +99,8 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead)
     {
+        $this->authorize('delete', $lead);
+
         $lead->delete();
 
         return response()->json([

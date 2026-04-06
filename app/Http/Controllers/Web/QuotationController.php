@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quotation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,7 +13,14 @@ class QuotationController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Quotation::class);
+
+        $user = $request->user();
         $query = Quotation::query()->with('lead:id,nama_client,perusahaan,status,assigned_to');
+
+        if (! $user->isAdmin()) {
+            $query->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
+        }
 
         $status = $request->query('status');
         $search = trim((string) $request->query('q', ''));
@@ -33,10 +41,16 @@ class QuotationController extends Controller
 
         $quotations = $query->latest('tanggal_penawaran')->paginate(15)->withQueryString();
 
+        $summaryQuery = Quotation::query();
+
+        if (! $user->isAdmin()) {
+            $summaryQuery->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
+        }
+
         $summary = [
-            'total' => Quotation::count(),
-            'pipeline_value' => Quotation::whereIn('status', ['pending', 'nego'])->sum('nilai_penawaran'),
-            'accepted_this_month' => Quotation::where('status', 'accepted')
+            'total' => (clone $summaryQuery)->count(),
+            'pipeline_value' => (clone $summaryQuery)->whereIn('status', ['pending', 'nego'])->sum('nilai_penawaran'),
+            'accepted_this_month' => (clone $summaryQuery)->where('status', 'accepted')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)
                 ->count(),
@@ -54,6 +68,8 @@ class QuotationController extends Controller
 
     public function edit(Quotation $quotation): View
     {
+        $this->authorize('view', $quotation);
+
         return view('quotations.edit', [
             'quotation' => $quotation->load('lead:id,nama_client,perusahaan,status,assigned_to'),
         ]);
@@ -61,6 +77,8 @@ class QuotationController extends Controller
 
     public function update(Request $request, Quotation $quotation): RedirectResponse
     {
+        $this->authorize('update', $quotation);
+
         $validated = $request->validate([
             'tanggal_penawaran' => ['required', 'date'],
             'nomor_penawaran' => ['nullable', 'string', 'max:255'],
@@ -79,6 +97,8 @@ class QuotationController extends Controller
 
     public function destroy(Quotation $quotation): RedirectResponse
     {
+        $this->authorize('delete', $quotation);
+
         $leadId = $quotation->lead_id;
         $quotation->delete();
 

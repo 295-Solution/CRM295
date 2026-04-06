@@ -15,7 +15,14 @@ class LeadController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Lead::class);
+
+        $user = $request->user();
         $leadsQuery = Lead::query()->with('assignedUser:id,name');
+
+        if (! $user->isAdmin()) {
+            $leadsQuery->where('assigned_to', $user->id);
+        }
 
         $search = trim((string) $request->query('q', ''));
         $status = $request->query('status');
@@ -68,6 +75,8 @@ class LeadController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Lead::class);
+
         return view('leads.form', [
             'lead' => new Lead(['status' => 'Cold']),
             'users' => User::query()->orderBy('name')->get(['id', 'name']),
@@ -80,7 +89,15 @@ class LeadController extends Controller
 
     public function store(StoreLeadRequest $request): RedirectResponse
     {
-        $lead = Lead::create($request->validated());
+        $this->authorize('create', Lead::class);
+
+        $validated = $request->validated();
+
+        if (! $request->user()->isAdmin()) {
+            $validated['assigned_to'] = $request->user()->id;
+        }
+
+        $lead = Lead::create($validated);
 
         $lead->statusHistories()->create([
             'from_status' => null,
@@ -97,6 +114,8 @@ class LeadController extends Controller
 
     public function show(Lead $lead): View
     {
+        $this->authorize('view', $lead);
+
         $lead->load([
             'assignedUser:id,name',
             'statusHistories' => fn ($query) => $query->with('changedByUser:id,name')->latest('changed_at'),
@@ -111,6 +130,8 @@ class LeadController extends Controller
 
     public function edit(Lead $lead): View
     {
+        $this->authorize('update', $lead);
+
         return view('leads.form', [
             'lead' => $lead,
             'users' => User::query()->orderBy('name')->get(['id', 'name']),
@@ -123,8 +144,16 @@ class LeadController extends Controller
 
     public function update(UpdateLeadRequest $request, Lead $lead): RedirectResponse
     {
+        $this->authorize('update', $lead);
+
         $oldStatus = $lead->status;
-        $lead->update($request->validated());
+        $validated = $request->validated();
+
+        if (! $request->user()->isAdmin()) {
+            $validated['assigned_to'] = $lead->assigned_to;
+        }
+
+        $lead->update($validated);
 
         if ($oldStatus !== $lead->status) {
             $lead->statusHistories()->create([
@@ -143,6 +172,8 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead): RedirectResponse
     {
+        $this->authorize('delete', $lead);
+
         $lead->delete();
 
         return redirect()
@@ -152,6 +183,8 @@ class LeadController extends Controller
 
     public function updateStatus(Request $request, Lead $lead): RedirectResponse
     {
+        $this->authorize('update', $lead);
+
         $validated = $request->validate([
             'status' => ['required', 'in:Cold,Warm,Hot,Deal,Lost'],
             'note' => ['nullable', 'string'],
@@ -177,6 +210,8 @@ class LeadController extends Controller
 
     public function storeActivity(Request $request, Lead $lead): RedirectResponse
     {
+        $this->authorize('update', $lead);
+
         $validated = $request->validate([
             'tanggal' => ['required', 'date'],
             'jenis' => ['required', 'string', 'max:100'],
@@ -191,6 +226,8 @@ class LeadController extends Controller
 
     public function storeQuotation(Request $request, Lead $lead): RedirectResponse
     {
+        $this->authorize('update', $lead);
+
         if ($lead->status !== 'Hot') {
             return back()->withErrors([
                 'quotation' => 'Quotation hanya bisa ditambahkan saat status lead Hot.',

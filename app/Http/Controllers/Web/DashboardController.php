@@ -6,29 +6,46 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Lead;
 use App\Models\Quotation;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+
+        $leadBaseQuery = Lead::query();
+        $activityBaseQuery = Activity::query();
+        $quotationBaseQuery = Quotation::query();
+
+        if (! $user->isAdmin()) {
+            $leadBaseQuery->where('assigned_to', $user->id);
+            $activityBaseQuery->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
+            $quotationBaseQuery->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
+        }
+
         $statusCounts = [
-            'Cold' => Lead::where('status', 'Cold')->count(),
-            'Warm' => Lead::where('status', 'Warm')->count(),
-            'Hot' => Lead::where('status', 'Hot')->count(),
-            'Deal' => Lead::where('status', 'Deal')->count(),
-            'Lost' => Lead::where('status', 'Lost')->count(),
+            'Cold' => (clone $leadBaseQuery)->where('status', 'Cold')->count(),
+            'Warm' => (clone $leadBaseQuery)->where('status', 'Warm')->count(),
+            'Hot' => (clone $leadBaseQuery)->where('status', 'Hot')->count(),
+            'Deal' => (clone $leadBaseQuery)->where('status', 'Deal')->count(),
+            'Lost' => (clone $leadBaseQuery)->where('status', 'Lost')->count(),
         ];
 
         $totalLeads = array_sum($statusCounts);
-        $closingThisMonth = Lead::where('status', 'Deal')
+        $closingThisMonth = (clone $leadBaseQuery)
+            ->where('status', 'Deal')
             ->whereMonth('updated_at', now()->month)
             ->whereYear('updated_at', now()->year)
             ->count();
 
-        $pipelineValue = Quotation::whereIn('status', ['pending', 'nego'])
+        $pipelineValue = (clone $quotationBaseQuery)
+            ->whereIn('status', ['pending', 'nego'])
             ->sum('nilai_penawaran');
 
-        $overdueFollowUps = Activity::whereNotNull('next_follow_up')
+        $overdueFollowUps = (clone $activityBaseQuery)
+            ->whereNotNull('next_follow_up')
             ->where('next_follow_up', '<', now())
             ->count();
 
@@ -44,14 +61,14 @@ class DashboardController extends Controller
             ['label' => 'Lost', 'value' => $statusCounts['Lost'], 'color' => '#2f3135'],
         ];
 
-        $perSales = Lead::query()
+        $perSales = (clone $leadBaseQuery)
             ->with('assignedUser:id,name')
             ->selectRaw('assigned_to, count(*) as total')
             ->groupBy('assigned_to')
             ->orderByDesc('total')
             ->get();
 
-        $upcomingFollowUps = Activity::query()
+        $upcomingFollowUps = (clone $activityBaseQuery)
             ->with('lead:id,nama_client,perusahaan,status')
             ->whereNotNull('next_follow_up')
             ->where('next_follow_up', '>=', now())

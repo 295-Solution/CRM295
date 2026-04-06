@@ -18,6 +18,7 @@ class ReportController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
+        $user = $request->user();
         $year = (int) $request->query('year', now()->year);
         $filters = [
             'sales_id' => $request->query('sales_id'),
@@ -30,25 +31,25 @@ class ReportController extends Controller
         [$fromDate, $toDate] = $this->resolveDateRange($filters, $year);
 
         $overviewLeadsQuery = Lead::query()->whereYear('created_at', $year);
-        $this->applyLeadFilters($overviewLeadsQuery, $filters);
+        $this->applyLeadFilters($overviewLeadsQuery, $filters, $user);
         $this->applyDateRangeFilter($overviewLeadsQuery, 'created_at', $fromDate, $toDate);
 
         $overviewStatusQuery = Lead::query()->whereYear('updated_at', $year);
-        $this->applyLeadFilters($overviewStatusQuery, $filters);
+        $this->applyLeadFilters($overviewStatusQuery, $filters, $user);
         $this->applyDateRangeFilter($overviewStatusQuery, 'updated_at', $fromDate, $toDate);
 
         $pipelineQuery = Quotation::query()
             ->whereYear('created_at', $year)
             ->whereIn('status', ['pending', 'nego'])
-            ->whereHas('lead', function (Builder $query) use ($filters): void {
-                $this->applyLeadFilters($query, $filters);
+            ->whereHas('lead', function (Builder $query) use ($filters, $user): void {
+                $this->applyLeadFilters($query, $filters, $user);
             });
         $this->applyDateRangeFilter($pipelineQuery, 'created_at', $fromDate, $toDate);
 
         $monthlyRows = Lead::query()
             ->whereYear('updated_at', $year)
             ->select(['status', 'updated_at', 'assigned_to', 'sumber_lead'])
-            ->tap(fn (Builder $query) => $this->applyLeadFilters($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyLeadFilters($query, $filters, $user))
             ->tap(fn (Builder $query) => $this->applyDateRangeFilter($query, 'updated_at', $fromDate, $toDate))
             ->get()
             ->groupBy(fn (Lead $lead): int => (int) $lead->updated_at?->month);
@@ -84,6 +85,7 @@ class ReportController extends Controller
 
     public function salesMonthly(Request $request): JsonResponse
     {
+        $user = $request->user();
         $year = (int) $request->query('year', now()->year);
         $filters = [
             'sales_id' => $request->query('sales_id'),
@@ -99,7 +101,7 @@ class ReportController extends Controller
             ->with('quotations:id,lead_id,status,nilai_penawaran')
             ->whereYear('created_at', $year);
 
-        $this->applyLeadFilters($query, $filters);
+        $this->applyLeadFilters($query, $filters, $user);
         $this->applyDateRangeFilter($query, 'created_at', $fromDate, $toDate);
 
         $rows = $query->get(['id', 'assigned_to', 'status', 'created_at']);
@@ -143,6 +145,7 @@ class ReportController extends Controller
 
     public function funnelConversion(Request $request): JsonResponse
     {
+        $user = $request->user();
         $year = (int) $request->query('year', now()->year);
         $filters = [
             'sales_id' => $request->query('sales_id'),
@@ -162,12 +165,13 @@ class ReportController extends Controller
                 'from_date' => $fromDate?->toDateString(),
                 'to_date' => $toDate?->toDateString(),
             ],
-            'transitions' => $this->buildFunnelTransitions($year, $filters, $fromDate, $toDate),
+            'transitions' => $this->buildFunnelTransitions($year, $filters, $fromDate, $toDate, $user),
         ]);
     }
 
     public function followupsHealth(Request $request): JsonResponse
     {
+        $user = $request->user();
         $targetDate = $request->query('date')
             ? Carbon::parse((string) $request->query('date'))->endOfDay()
             : now()->endOfDay();
@@ -181,6 +185,10 @@ class ReportController extends Controller
 
         if (! empty($salesId)) {
             $query->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $salesId));
+        }
+
+        if (! $user->isAdmin()) {
+            $query->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
         }
 
         $activities = $query
@@ -222,8 +230,12 @@ class ReportController extends Controller
         ]);
     }
 
-    private function applyLeadFilters(Builder $query, array $filters): Builder
+    private function applyLeadFilters(Builder $query, array $filters, $user): Builder
     {
+        if (! $user->isAdmin()) {
+            $query->where('assigned_to', $user->id);
+        }
+
         if (! empty($filters['sales_id'])) {
             $query->where('assigned_to', $filters['sales_id']);
         }
@@ -285,12 +297,12 @@ class ReportController extends Controller
         return $query;
     }
 
-    private function buildFunnelTransitions(int $year, array $filters, ?Carbon $fromDate, ?Carbon $toDate): array
+    private function buildFunnelTransitions(int $year, array $filters, ?Carbon $fromDate, ?Carbon $toDate, $user): array
     {
         $historyQuery = LeadStatusHistory::query()
             ->whereYear('changed_at', $year)
-            ->whereHas('lead', function (Builder $query) use ($filters): void {
-                $this->applyLeadFilters($query, $filters);
+            ->whereHas('lead', function (Builder $query) use ($filters, $user): void {
+                $this->applyLeadFilters($query, $filters, $user);
             });
 
         $this->applyDateRangeFilter($historyQuery, 'changed_at', $fromDate, $toDate);
