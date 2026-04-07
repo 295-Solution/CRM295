@@ -182,7 +182,6 @@
             <button class="btn" type="submit">Masuk ke CRM</button>
         </form>
 
-        <p class="helper">Akun seed default: <code>superadmin@crm.test</code> / <code>Rewdcxz@295</code> · <code>admin@crm.test</code> / <code>password123</code></p>
     </main>
 </body>
 </html>
