@@ -266,7 +266,7 @@
                     <thead>
                         <tr>
                             <th>Client</th>
-                            <th>Nama Projek</th>
+                            <th>Jenis Projek</th>
                             <th>Tanggal</th>
                             <th>Nilai Penawaran</th>
                             <th>HPP</th>

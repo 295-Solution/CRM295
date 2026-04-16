@@ -190,8 +190,16 @@
                     </div>
                     
                     <div style="margin-bottom: 15px;">
-                        <label for="nama_projek" class="form-label">Nama Projek</label>
-                        <input type="text" class="form-control" id="nama_projek" name="nama_projek" value="{{ old('nama_projek') }}" required>
+                        <label for="nama_projek" class="form-label">Jenis Projek</label>
+                        <select class="form-control" id="nama_projek" name="nama_projek" required style="padding: 10px;">
+                            <option value="">-- Pilih Jenis Projek --</option>
+                            <option value="CCTV" @selected(old('nama_projek') == 'CCTV')>CCTV</option>
+                            <option value="MCFA" @selected(old('nama_projek') == 'MCFA')>MCFA</option>
+                            <option value="Gate" @selected(old('nama_projek') == 'Gate')>Gate</option>
+                            <option value="Videotron" @selected(old('nama_projek') == 'Videotron')>Videotron</option>
+                            <option value="Smartboard" @selected(old('nama_projek') == 'Smartboard')>Smartboard</option>
+                            <option value="Smarthome" @selected(old('nama_projek') == 'Smarthome')>Smarthome</option>
+                        </select>
                     </div>
                     
                     <div style="margin-bottom: 15px;">

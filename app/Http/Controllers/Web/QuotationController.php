@@ -140,12 +140,14 @@ class QuotationController extends Controller
         $this->authorize('update', $quotation);
 
         $validated = $request->validate([
+            'nama_projek' => ['required', 'string', 'max:255'],
             'tanggal_penawaran' => ['required', 'date'],
             'nilai_penawaran' => ['required', 'numeric'],
             'hpp' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:pending,nego,accepted,rejected'],
         ]);
 
+        $quotation->nama_projek = $validated['nama_projek'];
         $quotation->tanggal_penawaran = $validated['tanggal_penawaran'];
         $quotation->nilai_penawaran = $validated['nilai_penawaran'];
         $quotation->hpp = $validated['hpp'];

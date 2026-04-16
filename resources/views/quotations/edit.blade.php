@@ -170,6 +170,18 @@
                 @method('PUT')
                 <div class="grid">
                     <div>
+                        <label class="form-label" for="nama_projek">Jenis Projek</label>
+                        <select class="form-control" id="nama_projek" name="nama_projek" required>
+                            <option value="">-- Pilih Jenis Projek --</option>
+                            <option value="CCTV" @selected(old('nama_projek', $quotation->nama_projek) == 'CCTV')>CCTV</option>
+                            <option value="MCFA" @selected(old('nama_projek', $quotation->nama_projek) == 'MCFA')>MCFA</option>
+                            <option value="Gate" @selected(old('nama_projek', $quotation->nama_projek) == 'Gate')>Gate</option>
+                            <option value="Videotron" @selected(old('nama_projek', $quotation->nama_projek) == 'Videotron')>Videotron</option>
+                            <option value="Smartboard" @selected(old('nama_projek', $quotation->nama_projek) == 'Smartboard')>Smartboard</option>
+                            <option value="Smarthome" @selected(old('nama_projek', $quotation->nama_projek) == 'Smarthome')>Smarthome</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="form-label" for="tanggal_penawaran">Tanggal Penawaran</label>
                         <input class="form-control" id="tanggal_penawaran" type="date" name="tanggal_penawaran" value="{{ old('tanggal_penawaran', optional($quotation->tanggal_penawaran)->format('Y-m-d')) }}" required>
                     </div>
