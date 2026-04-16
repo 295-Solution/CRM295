@@ -3,17 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard - CRM 295 Solution</title>
+    <title>Dashboard - ACM 295 Solution</title>
 
     {{-- ===== SEO & Open Graph (WhatsApp / Social Preview) ===== --}}
-    <meta name="title" content="Dashboard - CRM 295 Solution">
-    <meta name="description" content="Sistem CRM internal 295 Solution untuk manajemen klien dan tracking penawaran untuk performa tim sales yang lebih baik.">
+    <meta name="title" content="Dashboard - ACM 295 Solution">
+    <meta name="description" content="Sistem Access CCTV Monitoring (ACM) internal 295 Solution.">
 
     {{-- Open Graph / Facebook / WhatsApp --}}
     <meta property="og:type"         content="website">
     <meta property="og:url"          content="{{ url()->current() }}">
-    <meta property="og:title"        content="Dashboard - CRM 295 Solution">
-    <meta property="og:description"  content="Sistem CRM internal 295 Solution untuk manajemen klien dan tracking penawaran untuk performa tim sales yang lebih baik.">
+    <meta property="og:title"        content="Dashboard - ACM 295 Solution">
+    <meta property="og:description"  content="Sistem Access CCTV Monitoring (ACM) internal 295 Solution.">
     <meta property="og:image"        content="{{ asset('images/og-preview.png') }}">
     <meta property="og:image:width"  content="1200">
     <meta property="og:image:height" content="630">
@@ -23,8 +23,8 @@
     {{-- Twitter --}}
     <meta property="twitter:card"        content="summary_large_image">
     <meta property="twitter:url"         content="{{ url()->current() }}">
-    <meta property="twitter:title"       content="Dashboard - CRM 295 Solution">
-    <meta property="twitter:description" content="Sistem CRM internal 295 Solution untuk manajemen klien dan tracking penawaran untuk performa tim." >
+    <meta property="twitter:title"       content="Dashboard - ACM 295 Solution">
+    <meta property="twitter:description" content="Sistem Access CCTV Monitoring (ACM) internal 295 Solution." >
     <meta property="twitter:image"       content="{{ asset('images/og-preview.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
