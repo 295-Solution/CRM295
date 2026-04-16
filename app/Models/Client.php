@@ -23,11 +23,11 @@ class Client extends Model
     ];
 
     public const BUSINESS_TYPE_OPTIONS = [
-        'industri',
-        'institusi pemerintah',
-        'pendidikan',
-        'fasilitas publik',
-        'fnb',
+        'Komersial & Retail',
+        'Residensial',
+        'Pemerintahan & Institusi',
+        'Fasilitas Publik & Sosial',
+        'Industri',
     ];
 
     protected $fillable = [

@@ -189,6 +189,36 @@ class ReportController extends Controller
             'sales' => $salesHealth,
         ];
 
+        $sumberClientQuery = \App\Models\Client::query()
+            ->whereYear('created_at', $selectedYear)
+            ->selectRaw('sumber_client, count(*) as total')
+            ->whereNotNull('sumber_client')
+            ->where('sumber_client', '!=', '')
+            ->groupBy('sumber_client')
+            ->orderByDesc('total');
+        $this->applyDateRangeFilter($sumberClientQuery, 'created_at', $fromDate, $toDate);
+        $sumberClientCounts = $sumberClientQuery->get();
+
+        $jenisBisnisQuery = \App\Models\Client::query()
+            ->whereYear('created_at', $selectedYear)
+            ->selectRaw('jenis_bisnis, count(*) as total')
+            ->whereNotNull('jenis_bisnis')
+            ->where('jenis_bisnis', '!=', '')
+            ->groupBy('jenis_bisnis')
+            ->orderByDesc('total');
+        $this->applyDateRangeFilter($jenisBisnisQuery, 'created_at', $fromDate, $toDate);
+        $jenisBisnisCounts = $jenisBisnisQuery->get();
+
+        $jenisProjekQuery = Quotation::query()
+            ->whereYear('created_at', $selectedYear)
+            ->selectRaw('nama_projek, count(*) as total')
+            ->whereNotNull('nama_projek')
+            ->where('nama_projek', '!=', '')
+            ->groupBy('nama_projek')
+            ->orderByDesc('total');
+        $this->applyDateRangeFilter($jenisProjekQuery, 'created_at', $fromDate, $toDate);
+        $jenisProjekCounts = $jenisProjekQuery->get();
+
         return view('reports.index', [
             'selectedYear' => $selectedYear,
             'availableYears' => $availableYears,
@@ -200,6 +230,9 @@ class ReportController extends Controller
             'monthlyClosing' => $monthlyClosing,
             'perSales' => $perSales,
             'perClient' => $perClient,
+            'sumberClientCounts' => $sumberClientCounts,
+            'jenisBisnisCounts' => $jenisBisnisCounts,
+            'jenisProjekCounts' => $jenisProjekCounts,
             'overview' => $overview,
             'reminderHealth' => $reminderHealth,
         ]);

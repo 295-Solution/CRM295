@@ -601,6 +601,98 @@
             </div>
         </section>
 
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <!-- Jenis Projek -->
+            <section class="panel" style="margin-bottom: 0; padding: 20px;">
+                <h2 style="font-size: 16px; margin-bottom: 16px; display:flex; align-items:center; gap:8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                    Jenis Projek
+                </h2>
+                <div class="table-wrap" style="box-shadow:none;">
+                    <table style="min-width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Jenis</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($jenisProjekCounts as $row)
+                                <tr>
+                                    <td style="font-weight:600;">{{ Str::headline($row->nama_projek) }}</td>
+                                    <td style="text-align:right; font-weight:700;">{{ number_format($row->total) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="muted text-center">Belum ada data</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sumber Client -->
+            <section class="panel" style="margin-bottom: 0; padding: 20px;">
+                <h2 style="font-size: 16px; margin-bottom: 16px; display:flex; align-items:center; gap:8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--deal)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    Sumber Client
+                </h2>
+                <div class="table-wrap" style="box-shadow:none;">
+                    <table style="min-width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Sumber</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($sumberClientCounts as $row)
+                                <tr>
+                                    <td style="font-weight:600;">{{ Str::headline($row->sumber_client) }}</td>
+                                    <td style="text-align:right; font-weight:700;">{{ number_format($row->total) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="muted text-center">Belum ada data</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Jenis Bisnis -->
+            <section class="panel" style="margin-bottom: 0; padding: 20px;">
+                <h2 style="font-size: 16px; margin-bottom: 16px; display:flex; align-items:center; gap:8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#ef6c00"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    Jenis Bisnis
+                </h2>
+                <div class="table-wrap" style="box-shadow:none;">
+                    <table style="min-width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Jenis Bisnis</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($jenisBisnisCounts as $row)
+                                <tr>
+                                    <td style="font-weight:600;">{{ Str::headline($row->jenis_bisnis) }}</td>
+                                    <td style="text-align:right; font-weight:700;">{{ number_format($row->total) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="muted text-center">Belum ada data</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
         <section class="panel">
             <h2>Reminder Health</h2>
             <div class="health-grid">
