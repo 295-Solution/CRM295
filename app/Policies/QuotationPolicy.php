@@ -14,7 +14,7 @@ class QuotationPolicy
 
     public function view(User $user, Quotation $quotation): bool
     {
-        return $user->isAdmin() || $quotation->lead?->assigned_to === $user->id;
+        return true;
     }
 
     public function create(User $user): bool
@@ -24,11 +24,11 @@ class QuotationPolicy
 
     public function update(User $user, Quotation $quotation): bool
     {
-        return $user->isAdmin() || $quotation->lead?->assigned_to === $user->id;
+        return true;
     }
 
     public function delete(User $user, Quotation $quotation): bool
     {
-        return $user->isAdmin() || $quotation->lead?->assigned_to === $user->id;
+        return true;
     }
 }

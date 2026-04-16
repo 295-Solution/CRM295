@@ -65,22 +65,17 @@ class QuotationController extends Controller
         $this->authorize('viewAny', Quotation::class);
 
         $user = $request->user();
-        $query = Quotation::query()->with('lead:id,nama_client,perusahaan,status,assigned_to');
-
-        if (! $user->isAdmin()) {
-            $query->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
-        }
+        $query = Quotation::query()->with('client:id,nama,perusahaan');
 
         $status = $request->query('status');
         $search = trim((string) $request->query('q', ''));
 
         if ($search !== '') {
             $query->where(function ($inner) use ($search): void {
-                $inner->where('nomor_penawaran', 'like', "%{$search}%")
-                    ->orWhereHas('lead', function ($leadQuery) use ($search): void {
-                        $leadQuery->where('nama_client', 'like', "%{$search}%")
-                            ->orWhere('perusahaan', 'like', "%{$search}%");
-                    });
+                $inner->whereHas('client', function ($clientQuery) use ($search): void {
+                    $clientQuery->where('nama', 'like', "%{$search}%")
+                        ->orWhere('perusahaan', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -91,10 +86,6 @@ class QuotationController extends Controller
         $quotations = $query->latest('tanggal_penawaran')->paginate(15)->withQueryString();
 
         $summaryQuery = Quotation::query();
-
-        if (! $user->isAdmin()) {
-            $summaryQuery->whereHas('lead', fn (Builder $leadQuery) => $leadQuery->where('assigned_to', $user->id));
-        }
 
         $summary = [
             'total' => (clone $summaryQuery)->count(),
@@ -177,38 +168,5 @@ class QuotationController extends Controller
         $quotation->delete();
 
         return back()->with('success', 'Quotation berhasil dihapus.');
-    }
-
-    private function applyAcceptedStatusTransition(?int $actorId, Quotation $quotation): void
-    {
-        $lead = $quotation->lead;
-
-        if ($quotation->status === 'deal' && $lead->status !== 'deal') {
-            $fromStatus = $lead->status;
-            $lead->update(['status' => 'deal']);
-
-            $lead->statusHistories()->create([
-                'from_status' => $fromStatus,
-                'to_status' => 'deal',
-                'changed_by' => $actorId ?? $lead->assigned_to,
-                'changed_at' => now(),
-                'note' => 'Status lead diubah otomatis dari quotation deal',
-            ]);
-
-            return;
-        }
-
-        if ($quotation->status === 'batal' && $lead->status !== 'batal') {
-            $fromStatus = $lead->status;
-            $lead->update(['status' => 'batal']);
-
-            $lead->statusHistories()->create([
-                'from_status' => $fromStatus,
-                'to_status' => 'batal',
-                'changed_by' => $actorId ?? $lead->assigned_to,
-                'changed_at' => now(),
-                'note' => 'Status lead diubah otomatis dari quotation batal',
-            ]);
-        }
     }
 }

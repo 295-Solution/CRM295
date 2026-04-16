@@ -62,4 +62,21 @@ class ClientController extends Controller
 
         return redirect()->route('clients.index')->with('success', 'Client berhasil ditambahkan.');
     }
+
+    public function edit(Client $client): View
+    {
+        return view('clients.edit', [
+            'client' => $client,
+            'sumberClientOptions' => Client::SOURCE_OPTIONS,
+            'businessTypeOptions' => Client::BUSINESS_TYPE_OPTIONS,
+            'customBusinessTypeValue' => Client::CUSTOM_BUSINESS_TYPE,
+        ]);
+    }
+
+    public function update(StoreClientRequest $request, Client $client): RedirectResponse
+    {
+        $client->update($request->clientPayload());
+
+        return redirect()->route('clients.show', $client)->with('success', 'Client berhasil diupdate.');
+    }
 }
