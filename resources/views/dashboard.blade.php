@@ -56,9 +56,8 @@
         }
         
         @media (min-width: 960px) {
-            .grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-            .kpi { grid-column: span 4; }
-            .sources { grid-column: span 8; }
+            .grid { align-items: start; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+            .sources { grid-column: span 12; }
             .latest { grid-column: span 12; }
         }
 
@@ -202,7 +201,6 @@
                     @if ($sourceCounts->isEmpty())
                         <div class="empty">Belum ada data sumber client.</div>
                     @else
-                        <!-- Updated to grid layout for sources if more than 1 item, or leave as ul. Using flex/grid helps wrap nicely -->
                         <ul style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                             @foreach ($sourceCounts as $row)
                                 <li class="row">
