@@ -2,13 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Activity;
-use App\Models\Lead;
-use App\Models\Quotation;
 use App\Models\User;
-use App\Policies\ActivityPolicy;
-use App\Policies\LeadPolicy;
-use App\Policies\QuotationPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -30,9 +24,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::policy(Lead::class, LeadPolicy::class);
-        Gate::policy(Activity::class, ActivityPolicy::class);
-        Gate::policy(Quotation::class, QuotationPolicy::class);
         Gate::define('manage-users', fn (User $user): bool => $user->isSuperAdmin());
 
         RateLimiter::for('login', function (Request $request): Limit {

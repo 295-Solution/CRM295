@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
-    private const LEAD_STATUSES = ['Cold', 'Warm', 'Hot', 'Deal', 'Lost'];
+    private const LEAD_STATUSES = ['chat_masuk', 'calon_klien', 'klien', 'deal', 'batal'];
 
     public function summary(Request $request): JsonResponse
     {
@@ -40,7 +40,7 @@ class ReportController extends Controller
 
         $pipelineQuery = Quotation::query()
             ->whereYear('created_at', $year)
-            ->whereIn('status', ['pending', 'nego'])
+            ->whereIn('status', ['berjalan', 'nego'])
             ->whereHas('lead', function (Builder $query) use ($filters, $user): void {
                 $this->applyLeadFilters($query, $filters, $user);
             });
@@ -59,8 +59,8 @@ class ReportController extends Controller
 
             return [
                 'month' => $month,
-                'deal_total' => $rows->where('status', 'Deal')->count(),
-                'lost_total' => $rows->where('status', 'Lost')->count(),
+                'deal_total' => $rows->where('status', 'deal')->count(),
+                'batal_total' => $rows->where('status', 'batal')->count(),
             ];
         })->values();
 
@@ -75,8 +75,8 @@ class ReportController extends Controller
             ],
             'overview' => [
                 'total_leads' => $overviewLeadsQuery->count(),
-                'deal_total' => (clone $overviewStatusQuery)->where('status', 'Deal')->count(),
-                'lost_total' => (clone $overviewStatusQuery)->where('status', 'Lost')->count(),
+                'deal_total' => (clone $overviewStatusQuery)->where('status', 'deal')->count(),
+                'batal_total' => (clone $overviewStatusQuery)->where('status', 'batal')->count(),
                 'pipeline_value' => $pipelineQuery->sum('nilai_penawaran'),
             ],
             'monthly_closing' => $monthlyClosing,
@@ -98,7 +98,7 @@ class ReportController extends Controller
 
         $query = Lead::query()
             ->with('assignedUser:id,name')
-            ->with('quotations:id,lead_id,status,nilai_penawaran')
+            ->with('quotations:id,lead_id,status,nilai_penawaran,hpp')
             ->whereYear('created_at', $year);
 
         $this->applyLeadFilters($query, $filters, $user);
@@ -114,19 +114,19 @@ class ReportController extends Controller
         })->map(function ($group, string $key): array {
             [$month, $sales] = explode('|', $key);
 
-            $pipelineValue = $group->sum(function (Lead $lead): float {
-                return (float) $lead->quotations
-                    ->whereIn('status', ['pending', 'nego'])
-                    ->sum('nilai_penawaran');
-            });
+            $quotationValue = $group->sum(fn (Lead $lead): float => (float) $lead->quotations->sum('nilai_penawaran'));
+            $dealValue = $group->sum(fn (Lead $lead): float => (float) $lead->quotations->where('status', 'deal')->sum('nilai_penawaran'));
+            $hppValue = $group->sum(fn (Lead $lead): float => (float) $lead->quotations->where('status', 'deal')->sum('hpp'));
 
             return [
                 'month' => $month,
                 'sales' => $sales,
                 'total_leads' => $group->count(),
-                'deal_total' => $group->where('status', 'Deal')->count(),
-                'lost_total' => $group->where('status', 'Lost')->count(),
-                'pipeline_value' => $pipelineValue,
+                'deal_total' => $group->where('status', 'deal')->count(),
+                'batal_total' => $group->where('status', 'batal')->count(),
+                'quotation_value' => $quotationValue,
+                'deal_value' => $dealValue,
+                'hpp_value' => $hppValue,
             ];
         })->sortBy(['month', 'sales'])->values();
 
@@ -313,33 +313,33 @@ class ReportController extends Controller
             return ($history->from_status ?? 'null').'->'.$history->to_status;
         })->map->count();
 
-        $coldWarm = (int) ($transitionCount['Cold->Warm'] ?? 0);
-        $coldLost = (int) ($transitionCount['Cold->Lost'] ?? 0);
-        $warmHot = (int) ($transitionCount['Warm->Hot'] ?? 0);
-        $warmLost = (int) ($transitionCount['Warm->Lost'] ?? 0);
-        $hotDeal = (int) ($transitionCount['Hot->Deal'] ?? 0);
-        $hotLost = (int) ($transitionCount['Hot->Lost'] ?? 0);
+        $chatCalon = (int) ($transitionCount['chat_masuk->calon_klien'] ?? 0);
+        $chatBatal = (int) ($transitionCount['chat_masuk->batal'] ?? 0);
+        $calonKlien = (int) ($transitionCount['calon_klien->klien'] ?? 0);
+        $calonBatal = (int) ($transitionCount['calon_klien->batal'] ?? 0);
+        $klienDeal = (int) ($transitionCount['klien->deal'] ?? 0);
+        $klienBatal = (int) ($transitionCount['klien->batal'] ?? 0);
 
         $rate = fn (int $success, int $drop): float => round(($success / max(1, $success + $drop)) * 100, 1);
 
         return [
             [
-                'label' => 'Cold ke Warm',
-                'success' => $coldWarm,
-                'drop' => $coldLost,
-                'rate' => $rate($coldWarm, $coldLost),
+                'label' => 'Chat Masuk ke Calon Klien',
+                'success' => $chatCalon,
+                'drop' => $chatBatal,
+                'rate' => $rate($chatCalon, $chatBatal),
             ],
             [
-                'label' => 'Warm ke Hot',
-                'success' => $warmHot,
-                'drop' => $warmLost,
-                'rate' => $rate($warmHot, $warmLost),
+                'label' => 'Calon Klien ke Klien',
+                'success' => $calonKlien,
+                'drop' => $calonBatal,
+                'rate' => $rate($calonKlien, $calonBatal),
             ],
             [
-                'label' => 'Hot ke Deal',
-                'success' => $hotDeal,
-                'drop' => $hotLost,
-                'rate' => $rate($hotDeal, $hotLost),
+                'label' => 'Klien ke Deal',
+                'success' => $klienDeal,
+                'drop' => $klienBatal,
+                'rate' => $rate($klienDeal, $klienBatal),
             ],
         ];
     }

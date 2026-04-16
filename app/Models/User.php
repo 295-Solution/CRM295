@@ -3,7 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -58,15 +57,5 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->role === 'superadmin';
-    }
-
-    public function assignedLeads(): HasMany
-    {
-        return $this->hasMany(Lead::class, 'assigned_to');
-    }
-
-    public function changedLeadStatuses(): HasMany
-    {
-        return $this->hasMany(LeadStatusHistory::class, 'changed_by');
     }
 }

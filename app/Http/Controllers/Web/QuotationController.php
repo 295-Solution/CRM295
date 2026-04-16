@@ -11,6 +11,55 @@ use Illuminate\View\View;
 
 class QuotationController extends Controller
 {
+    private const QUOTATION_STATUSES = ['pending', 'nego', 'accepted', 'rejected'];
+
+    public function create(Request $request): View
+    {
+        $this->authorize('create', Quotation::class);
+
+        $clientId = $request->query('client_id');
+        $clients = \App\Models\Client::orderBy('nama')->get();
+
+        return view('quotations.create', [
+            'clients' => $clients,
+            'selectedClientId' => $clientId,
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->authorize('create', Quotation::class);
+
+        $validated = $request->validate([
+            'client_id' => ['required', 'exists:clients,id'],
+            'nama_projek' => ['required', 'string', 'max:255'],
+            'tanggal_penawaran' => ['required', 'date'],
+            'nilai_penawaran' => ['required', 'numeric'],
+            'hpp' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', 'in:pending,nego,accepted,rejected'],
+        ]);
+
+        $quotation = new Quotation();
+        $quotation->client_id = $validated['client_id'];
+        $quotation->nama_projek = $validated['nama_projek'];
+        $quotation->tanggal_penawaran = $validated['tanggal_penawaran'];
+        $quotation->nilai_penawaran = $validated['nilai_penawaran'];
+        $quotation->hpp = $validated['hpp'];
+        $quotation->status = $validated['status'];
+        $quotation->save();
+
+        $quotation->histories()->create([
+            'nilai_penawaran' => $quotation->nilai_penawaran,
+            'hpp' => $quotation->hpp,
+            'status' => $quotation->status,
+            'changed_by' => $request->user()->id,
+            'catatan' => 'Quotation dibuat',
+        ]);
+
+        return redirect()->route('clients.show', $quotation->client_id)
+            ->with('success', 'Quotation berhasil dibuat.');
+    }
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Quotation::class);
@@ -35,7 +84,7 @@ class QuotationController extends Controller
             });
         }
 
-        if (in_array($status, ['pending', 'nego', 'accepted', 'rejected'], true)) {
+        if (in_array($status, self::QUOTATION_STATUSES, true)) {
             $query->where('status', $status);
         }
 
@@ -49,8 +98,8 @@ class QuotationController extends Controller
 
         $summary = [
             'total' => (clone $summaryQuery)->count(),
-            'pipeline_value' => (clone $summaryQuery)->whereIn('status', ['pending', 'nego'])->sum('nilai_penawaran'),
-            'accepted_this_month' => (clone $summaryQuery)->where('status', 'accepted')
+            'quotation_ongoing' => (clone $summaryQuery)->whereIn('status', ['pending', 'nego'])->count(),
+            'deal_this_month' => (clone $summaryQuery)->where('status', 'accepted')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)
                 ->count(),
@@ -69,9 +118,20 @@ class QuotationController extends Controller
     public function edit(Quotation $quotation): View
     {
         $this->authorize('view', $quotation);
-
         return view('quotations.edit', [
-            'quotation' => $quotation->load('lead:id,nama_client,perusahaan,status,assigned_to'),
+            'quotation' => $quotation,
+        ]);
+    }
+
+    public function history(Quotation $quotation): View
+    {
+        $this->authorize('view', $quotation);
+
+        $histories = $quotation->histories()->with('changedBy')->get();
+
+        return view('quotations.history', [
+            'quotation' => $quotation,
+            'histories' => $histories,
         ]);
     }
 
@@ -81,53 +141,72 @@ class QuotationController extends Controller
 
         $validated = $request->validate([
             'tanggal_penawaran' => ['required', 'date'],
-            'nomor_penawaran' => ['nullable', 'string', 'max:255'],
             'nilai_penawaran' => ['required', 'numeric'],
+            'hpp' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:pending,nego,accepted,rejected'],
-            'keterangan' => ['nullable', 'string'],
         ]);
 
-        $quotation->update($validated);
-        $this->applyAcceptedStatusTransition($request->user()?->id, $quotation);
+        $quotation->tanggal_penawaran = $validated['tanggal_penawaran'];
+        $quotation->nilai_penawaran = $validated['nilai_penawaran'];
+        $quotation->hpp = $validated['hpp'];
+        $quotation->status = $validated['status'];
+        $isHistoryDirty = $quotation->isDirty(['nilai_penawaran', 'hpp', 'status']);
+        $quotation->save();
+
+        if ($isHistoryDirty) {
+            $quotation->histories()->create([
+                'nilai_penawaran' => $quotation->nilai_penawaran,
+                'hpp' => $quotation->hpp,
+                'status' => $quotation->status,
+                'changed_by' => $request->user()->id,
+                'catatan' => 'Quotation diupdate',
+            ]);
+        }
 
         return redirect()
-            ->route('leads.show', $quotation->lead_id)
+            ->route('clients.show', $quotation->client_id)
             ->with('success', 'Quotation berhasil diupdate.');
     }
 
     public function destroy(Quotation $quotation): RedirectResponse
     {
         $this->authorize('delete', $quotation);
-
-        $leadId = $quotation->lead_id;
+        
         $quotation->delete();
 
-        return redirect()
-            ->route('leads.show', $leadId)
-            ->with('success', 'Quotation berhasil dihapus.');
+        return back()->with('success', 'Quotation berhasil dihapus.');
     }
 
     private function applyAcceptedStatusTransition(?int $actorId, Quotation $quotation): void
     {
-        if ($quotation->status !== 'accepted') {
-            return;
-        }
-
         $lead = $quotation->lead;
 
-        if ($lead->status === 'Deal') {
+        if ($quotation->status === 'deal' && $lead->status !== 'deal') {
+            $fromStatus = $lead->status;
+            $lead->update(['status' => 'deal']);
+
+            $lead->statusHistories()->create([
+                'from_status' => $fromStatus,
+                'to_status' => 'deal',
+                'changed_by' => $actorId ?? $lead->assigned_to,
+                'changed_at' => now(),
+                'note' => 'Status lead diubah otomatis dari quotation deal',
+            ]);
+
             return;
         }
 
-        $fromStatus = $lead->status;
-        $lead->update(['status' => 'Deal']);
+        if ($quotation->status === 'batal' && $lead->status !== 'batal') {
+            $fromStatus = $lead->status;
+            $lead->update(['status' => 'batal']);
 
-        $lead->statusHistories()->create([
-            'from_status' => $fromStatus,
-            'to_status' => 'Deal',
-            'changed_by' => $actorId ?? $lead->assigned_to,
-            'changed_at' => now(),
-            'note' => 'Status lead diubah otomatis dari quotation accepted',
-        ]);
+            $lead->statusHistories()->create([
+                'from_status' => $fromStatus,
+                'to_status' => 'batal',
+                'changed_by' => $actorId ?? $lead->assigned_to,
+                'changed_at' => now(),
+                'note' => 'Status lead diubah otomatis dari quotation batal',
+            ]);
+        }
     }
 }

@@ -13,17 +13,17 @@ class DashboardController extends Controller
     {
         $totalLeads = Lead::count();
 
-        $cold = Lead::where('status', 'Cold')->count();
-        $warm = Lead::where('status', 'Warm')->count();
-        $hot = Lead::where('status', 'Hot')->count();
-        $deal = Lead::where('status', 'Deal')->count();
-        $lost = Lead::where('status', 'Lost')->count();
+        $chatMasuk = Lead::where('status', 'chat_masuk')->count();
+        $calonKlien = Lead::where('status', 'calon_klien')->count();
+        $klien = Lead::where('status', 'klien')->count();
+        $deal = Lead::where('status', 'deal')->count();
+        $batal = Lead::where('status', 'batal')->count();
 
-        $closingThisMonth = Lead::where('status', 'Deal')
+        $closingThisMonth = Lead::where('status', 'deal')
             ->whereMonth('updated_at', now()->month)
             ->count();
 
-        $pipelineValue = Quotation::whereIn('status', ['pending', 'nego'])
+        $pipelineValue = Quotation::whereIn('status', ['berjalan', 'nego'])
             ->sum('nilai_penawaran');
 
         $perSales = Lead::with('assignedUser')
@@ -35,11 +35,11 @@ class DashboardController extends Controller
             'total_leads' => $totalLeads,
 
             'status_summary' => [
-                'cold' => $cold,
-                'warm' => $warm,
-                'hot' => $hot,
+                'chat_masuk' => $chatMasuk,
+                'calon_klien' => $calonKlien,
+                'klien' => $klien,
                 'deal' => $deal,
-                'lost' => $lost,
+                'batal' => $batal,
             ],
 
             'closing_this_month' => $closingThisMonth,

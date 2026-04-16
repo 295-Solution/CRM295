@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $pageTitle }} - CRM295</title>
+    @include('partials.sidebar-styles')
     <style>
         body { font-family: Manrope, sans-serif; margin: 0; background: #f3f1eb; color: #1f201d; }
         .container { max-width: 760px; margin: 0 auto; padding: 24px 16px 40px; }
@@ -21,6 +22,9 @@
     </style>
 </head>
 <body>
+    <div class="app-shell">
+        @include('partials.sidebar')
+        <main class="app-main">
     <div class="container">
         <div class="top">
             <h1>{{ $pageTitle }}</h1>
@@ -82,6 +86,8 @@
                 </div>
             </form>
         </section>
+    </div>
+        </main>
     </div>
 </body>
 </html>

@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\LeadStatusHistory;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -113,20 +111,7 @@ class UserManagementController extends Controller
             return back()->withErrors(['user' => 'Minimal harus ada 1 superadmin aktif.']);
         }
 
-        DB::transaction(function () use ($actor, $user): void {
-            // Reassign dependencies to current superadmin before deleting the user.
-            $user->assignedLeads()->update([
-                'assigned_to' => $actor->id,
-            ]);
-
-            LeadStatusHistory::query()
-                ->where('changed_by', $user->id)
-                ->update([
-                    'changed_by' => $actor->id,
-                ]);
-
-            $user->delete();
-        });
+        $user->delete();
 
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
     }

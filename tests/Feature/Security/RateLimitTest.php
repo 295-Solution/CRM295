@@ -44,31 +44,23 @@ class RateLimitTest extends TestCase
         Sanctum::actingAs($sales);
 
         for ($i = 1; $i <= 60; $i++) {
-            $response = $this->postJson('/api/leads', [
-                'nama_client' => 'Lead '.$i,
+            $response = $this->postJson('/api/clients', [
+                'nama' => 'Client '.$i,
                 'perusahaan' => 'PT Rate Limit',
-                'no_hp' => '0812000'.$i,
-                'email' => "lead{$i}@example.test",
-                'alamat' => 'Jakarta',
-                'sumber_lead' => 'website',
-                'status' => 'Cold',
-                'assigned_to' => $sales->id,
-                'notes' => null,
+                'nomor_wa' => '0812000'.$i,
+                'sumber_client' => 'website',
+                'jenis_bisnis' => 'industri',
             ]);
 
             $response->assertCreated();
         }
 
-        $throttled = $this->postJson('/api/leads', [
-            'nama_client' => 'Lead 61',
+        $throttled = $this->postJson('/api/clients', [
+            'nama' => 'Client 61',
             'perusahaan' => 'PT Rate Limit',
-            'no_hp' => '081200061',
-            'email' => 'lead61@example.test',
-            'alamat' => 'Jakarta',
-            'sumber_lead' => 'website',
-            'status' => 'Cold',
-            'assigned_to' => $sales->id,
-            'notes' => null,
+            'nomor_wa' => '081200061',
+            'sumber_client' => 'website',
+            'jenis_bisnis' => 'industri',
         ]);
 
         $throttled->assertStatus(429);

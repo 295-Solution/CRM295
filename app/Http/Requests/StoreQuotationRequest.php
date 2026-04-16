@@ -22,7 +22,8 @@ class StoreQuotationRequest extends FormRequest
             'tanggal_penawaran' => ['required', 'date'],
             'nomor_penawaran' => ['nullable', 'string'],
             'nilai_penawaran' => ['required', 'numeric'],
-            'status' => ['required', 'in:pending,nego,accepted,rejected'],
+            'hpp' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', 'in:berjalan,nego,deal,batal'],
             'keterangan' => ['nullable', 'string'],
         ];
     }

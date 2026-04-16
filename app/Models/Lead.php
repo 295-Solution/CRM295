@@ -33,10 +33,6 @@ class Lead extends Model
         return $this->hasMany(Activity::class);
     }
 
-    public function quotations(): HasMany
-    {
-        return $this->hasMany(Quotation::class);
-    }
 
     public function statusHistories(): HasMany
     {

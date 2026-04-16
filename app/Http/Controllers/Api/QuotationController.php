@@ -37,20 +37,30 @@ class QuotationController extends Controller
         $lead = Lead::findOrFail($request->validated()['lead_id']);
         $this->authorize('view', $lead);
 
-        if ($lead->status !== 'Hot') {
+        if ($lead->status !== 'klien') {
             return response()->json([
-                'message' => 'Quotation hanya dapat dibuat untuk lead dengan status Hot.',
+                'message' => 'Quotation hanya dapat dibuat untuk client dengan status klien.',
             ], 422);
         }
 
-        $quotation = Quotation::create($request->validated());
+        $activeQuotation = $lead->quotations()
+            ->whereIn('status', ['berjalan', 'nego'])
+            ->latest('id')
+            ->first();
+
+        if ($activeQuotation) {
+            $activeQuotation->update($request->validated());
+            $quotation = $activeQuotation;
+        } else {
+            $quotation = Quotation::create($request->validated());
+        }
 
         $this->applyAcceptedStatusTransition($request->user()?->id, $quotation);
 
         return response()->json([
-            'message' => 'Penawaran berhasil dibuat',
+            'message' => $activeQuotation ? 'Penawaran aktif berhasil diperbarui' : 'Penawaran pertama berhasil dibuat',
             'data' => $quotation->load('lead'),
-        ], 201);
+        ], $activeQuotation ? 200 : 201);
     }
 
     public function show(Quotation $quotation)
@@ -89,25 +99,34 @@ class QuotationController extends Controller
 
     private function applyAcceptedStatusTransition(?int $actorId, Quotation $quotation): void
     {
-        if ($quotation->status !== 'accepted') {
-            return;
-        }
-
         $lead = $quotation->lead;
 
-        if ($lead->status === 'Deal') {
+        if ($quotation->status === 'deal' && $lead->status !== 'deal') {
+            $fromStatus = $lead->status;
+            $lead->update(['status' => 'deal']);
+
+            $lead->statusHistories()->create([
+                'from_status' => $fromStatus,
+                'to_status' => 'deal',
+                'changed_by' => $actorId ?? $lead->assigned_to,
+                'changed_at' => now(),
+                'note' => 'Status lead diubah otomatis dari quotation deal',
+            ]);
+
             return;
         }
 
-        $fromStatus = $lead->status;
-        $lead->update(['status' => 'Deal']);
+        if ($quotation->status === 'batal' && $lead->status !== 'batal') {
+            $fromStatus = $lead->status;
+            $lead->update(['status' => 'batal']);
 
-        $lead->statusHistories()->create([
-            'from_status' => $fromStatus,
-            'to_status' => 'Deal',
-            'changed_by' => $actorId ?? $lead->assigned_to,
-            'changed_at' => now(),
-            'note' => 'Status lead diubah otomatis dari quotation accepted',
-        ]);
+            $lead->statusHistories()->create([
+                'from_status' => $fromStatus,
+                'to_status' => 'batal',
+                'changed_by' => $actorId ?? $lead->assigned_to,
+                'changed_at' => now(),
+                'note' => 'Status lead diubah otomatis dari quotation batal',
+            ]);
+        }
     }
 }

@@ -217,6 +217,7 @@ Catatan:
 - Reports
 
 Dokumen tambahan blueprint MVP tersedia di `docs/mvp-blueprint.md`.
+Dokumen acuan rombak alur marketing tersedia di `docs/marketing-flow-revamp-plan.md`.
 
 Panduan deploy VPS tanpa Node dengan best practice (Pola B) tersedia di `docs/deploy-pattern-b.md`.
 Alternatif build-artifact workflow tersedia di `docs/deploy-pattern-a.md`.

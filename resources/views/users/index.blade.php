@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manajemen User - CRM295</title>
+    @include('partials.sidebar-styles')
     <style>
         body { font-family: Manrope, sans-serif; margin: 0; background: #f3f1eb; color: #1f201d; }
         .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px; }
@@ -25,11 +26,13 @@
     </style>
 </head>
 <body>
+    <div class="app-shell">
+        @include('partials.sidebar')
+        <main class="app-main">
     <div class="container">
         <div class="top">
             <h1>Manajemen User</h1>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <a class="btn" href="{{ route('dashboard.page') }}">Dashboard</a>
                 <a class="btn btn-primary" href="{{ route('users.create') }}">Tambah User</a>
             </div>
         </div>
@@ -98,6 +101,8 @@
 
             <div class="pagination">{{ $users->links() }}</div>
         </section>
+    </div>
+        </main>
     </div>
 </body>
 </html>
