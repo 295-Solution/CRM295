@@ -153,6 +153,42 @@
             background: #f3f4f6;
         }
 
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: capitalize;
+            letter-spacing: 0.03em;
+        }
+        
+        .status-pending { background: #fff0cc; color: #997300; }
+        .status-nego { background: #e0f2fe; color: #026aa7; }
+        .status-accepted { background: #dcfce7; color: #166534; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            color: #6b7280;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            margin-right: 4px;
+        }
+
+        .action-btn:hover {
+            color: #1f2937;
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
         .table-wrap {
             border: 1px solid #e9ecef;
             border-radius: 16px;
@@ -267,23 +303,43 @@
                         <table>
                             <thead>
                                 <tr>
+                                    <th>Client</th>
+                                    <th>Nama Projek</th>
                                     <th>Tanggal</th>
-                                    <th>Nomor Quotation</th>
-                                    <th>Nilai</th>
+                                    <th>Nilai Penawaran</th>
                                     <th>HPP</th>
                                     <th>Status</th>
-                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($client->quotations as $quotation)
                                     <tr>
-                                        <td>{{ optional($quotation->tanggal_penawaran)->format('d M Y') ?: '-' }}</td>
-                                        <td>{{ $quotation->nomor_penawaran ?: '-' }}</td>
-                                        <td>Rp {{ number_format((float) $quotation->nilai_penawaran, 0, ',', '.') }}</td>
+                                        <td><div style="font-weight:600; color:#1f2937;">{{ $quotation->client->nama ?? '-' }}</div></td>
+                                        <td>{{ $quotation->nama_projek ?? '-' }}</td>
+                                        <td><div style="color:#6b7280; font-size:13px;">{{ optional($quotation->tanggal_penawaran)->format('d M Y') ?: '-' }}</div></td>
+                                        <td><div style="font-weight:700;">Rp {{ number_format((float) $quotation->nilai_penawaran, 0, ',', '.') }}</div></td>
                                         <td>Rp {{ number_format((float) $quotation->hpp, 0, ',', '.') }}</td>
-                                        <td><span class="chip" style="background:#f9fafb;">{{ ucfirst($quotation->status) }}</span></td>
-                                        <td>{{ $quotation->keterangan ?: '-' }}</td>
+                                        <td>
+                                            <span class="status-badge status-{{ strtolower($quotation->status) }}">
+                                                {{ ucfirst($quotation->status) }}
+                                            </span>
+                                        </td>
+                                        <td style="white-space: nowrap;">
+                                            <a href="{{ route('quotations.edit', $quotation->id) }}" class="action-btn" title="Edit">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            </a>
+                                            <a href="{{ route('quotations.history', $quotation->id) }}" class="action-btn" title="History" style="color: #0b7285;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                            </a>
+                                            <form action="{{ route('quotations.destroy', $quotation->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus quotation ini?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="action-btn" title="Delete" style="color: #dc2626; cursor: pointer;">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

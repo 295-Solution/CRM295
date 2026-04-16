@@ -172,7 +172,7 @@
                                 <tbody>
                                     @foreach($histories as $history)
                                         <tr>
-                                            <td style="color:#4b5563; font-weight:500;">{{ $history->created_at->format('d M Y H:i') }}</td>
+                                            <td style="color:#4b5563; font-weight:500;">{{ $history->created_at->timezone('Asia/Jakarta')->format('d M Y H:i') }}</td>
                                             <td>
                                                 <span class="status-badge status-{{ strtolower($history->status) }}">
                                                     {{ $history->status }}
